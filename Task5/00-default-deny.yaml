@@ -1,0 +1,37 @@
+# Базовое правило: в пространстве имён запрещён весь входящий и исходящий трафик подов.
+# Всё нужное затем разрешается точечно (см. non-admin-api-allow.yaml и admin-api-allow.yaml).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: traffic-demo
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: traffic-demo
+spec:
+  podSelector: {}            # все поды пространства имён
+  policyTypes: [Ingress, Egress]
+---
+# Без DNS поды не смогут найти друг друга по имени сервиса (например, back-end-api-app).
+# Разрешаем всем подам только запросы к DNS кластера.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns-egress
+  namespace: traffic-demo
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - {protocol: UDP, port: 53}
+        - {protocol: TCP, port: 53}

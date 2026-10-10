@@ -1,0 +1,51 @@
+# Административная пара сервисов: admin-front-end <-> admin-back-end-api. Трафик в обе стороны, порт 80.
+# Обычные сервисы (front-end, back-end-api) к административным не пускаются.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: admin-back-end-api-allow-admin-front-end
+  namespace: traffic-demo
+spec:
+  podSelector:
+    matchLabels:
+      role: admin-back-end-api
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              role: admin-front-end
+      ports:
+        - {protocol: TCP, port: 80}
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              role: admin-front-end
+      ports:
+        - {protocol: TCP, port: 80}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: admin-front-end-allow-admin-back-end-api
+  namespace: traffic-demo
+spec:
+  podSelector:
+    matchLabels:
+      role: admin-front-end
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              role: admin-back-end-api
+      ports:
+        - {protocol: TCP, port: 80}
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              role: admin-back-end-api
+      ports:
+        - {protocol: TCP, port: 80}
